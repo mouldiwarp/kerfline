@@ -94,6 +94,17 @@ public actor MachineSession {
     private var pendingConsole: [ConsoleLine] = []
     /// Last `[PRB:x,y,z:ok]` report (machine coordinates).
     private var lastPrb: (pos: Vec3, ok: Bool)?
+    /// Axes homed one at a time (`$HZ`…) since the position was last lost: all three make the machine homed.
+    private var homedAxes: Set<Axis> = []
+    /// Where the last full homing cycle left the machine (the pull-off point), for Home X/Y/Z on a GRBL that can't
+    /// home one axis; and whether to record it from the next idle status report.
+    private var homePosition: Vec3?
+    private var captureHomePosition = false
+
+    private func lostHome() {
+        machine.homed = false
+        homedAxes = []
+    }
     private var lastAlarmCode: Int?
     private var lastSettingsAsk = 0.0
     private var maxRxFree = 0
@@ -156,7 +167,7 @@ public actor MachineSession {
             transport = nil
             reader?.cancel()
             machine.connection = .disconnected
-            machine.homed = false
+            lostHome()
             machineChanged()
             log(.error, "Could not open \(t.name): \(error.localizedDescription)")
             throw error
@@ -192,7 +203,7 @@ public actor MachineSession {
         if let t { await t.close() }
         machine.connection = .disconnected
         machine.status = .unknown
-        machine.homed = false
+        lostHome()
         machineChanged()
     }
 
@@ -220,7 +231,7 @@ public actor MachineSession {
         teardown()
         machine.connection = .disconnected
         machine.status = .unknown
-        machine.homed = false
+        lostHome()
         machineChanged()
     }
 
@@ -249,7 +260,7 @@ public actor MachineSession {
             log(.error, "\(line) \(message)")
             machine.status = .alarm
             machine.alarm = Alarm(code: code, message: message)
-            machine.homed = false
+            lostHome()
             machineChanged()
             flushBuffers("Alarm")
             if isJobActive { failJob("ALARM:\(code) \(message)") }
@@ -293,6 +304,10 @@ public actor MachineSession {
             if line.hasPrefix("[OPT:") {
                 let parts = line.dropFirst(5).dropLast().split(separator: ",", omittingEmptySubsequences: false)
                 if parts.count > 2, let rx = Int(parts[2]), rx > 0 { rxSize = rx }
+                if let codes = parts.first {
+                    machine.homeAxes = codes.contains("H")
+                    machineChanged()
+                }
             }
             echoIfUser(line)
         default:
@@ -359,6 +374,10 @@ public actor MachineSession {
             machine.mpos = wpos + lastWco
         }
         machine.wco = lastWco
+        if captureHomePosition, s.state == .idle {
+            homePosition = machine.mpos
+            captureHomePosition = false
+        }
         if let f = s.feed { machine.feed = f }
         if let sp = s.spindle { machine.spindle = sp }
         if let ov = s.overrides { machine.overrides = ov }
@@ -380,7 +399,7 @@ public actor MachineSession {
         machine.accessories = s.accessories
         if s.state != .alarm { machine.alarm = nil }
         // Booting into ALARM (homing required): the position can't be trusted until homed.
-        if s.state == .alarm && machine.homed == true { machine.homed = false }
+        if s.state == .alarm && machine.homed == true { lostHome() }
         if machine.connection == .connecting {
             // Boards that don't reset when the port opens (no banner) come up through a status
             // report instead: ask for the build info and settings here too.
@@ -731,11 +750,41 @@ public actor MachineSession {
             if (inflight + queue).contains(where: { $0.text == "$H" }) || machine.status == .home {
                 throw MachineError("Already homing")
             }
-            machine.homed = false
+            lostHome()
             machineChanged()
             try await run("$H")
             machine.homed = true
+            homedAxes = Set(Axis.allCases)
+            captureHomePosition = true
             machineChanged()
+        case .homeAxis(let axis):
+            try need()
+            if isJobActive { throw MachineError("Can't home while a job is running") }
+            if (inflight + queue).contains(where: { $0.text.hasPrefix("$H") }) || machine.status == .home {
+                throw MachineError("Already homing")
+            }
+            if machine.homeAxes == true {
+                // X and Y move at the cutter's height: home Z first, so the bit goes up clear of the work.
+                for a in axis == .Z ? [Axis.Z] : [.Z, axis] {
+                    try await run("$H\(a.rawValue)")
+                    homedAxes.insert(a)
+                    // Homing one axis leaves the others where they were: still homed if they were before.
+                    if homedAxes.count == 3 { machine.homed = true }
+                    machineChanged()
+                }
+            } else {
+                // Stock GRBL 1.1 can't home one axis (and `$HX` there can leave it stuck in Home): move back to
+                // where the last full home left that axis instead, Z first.
+                guard machine.homed == true, let h = homePosition else {
+                    throw MachineError("This GRBL can't home one axis at a time. Home all axes once: after that, Home \(axis.rawValue) moves \(axis.rawValue) back to its home position")
+                }
+                try idle("move")
+                if machine.mpos[2] < h[2] - 0.001 || axis == .Z { try await run("G53G0Z\(fmt(h[2]))") }
+                if axis != .Z {
+                    let i = axis == .X ? 0 : 1
+                    try await run("G53G0\(axis.rawValue)\(fmt(h[i]))")
+                }
+            }
         case .unlock:
             try need()
             try await run("$X")

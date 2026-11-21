@@ -56,6 +56,8 @@ public struct MachineState: Codable, Equatable, Sendable {
     public var wco = Vec3.zero
     /// Homed since the last alarm or connect, so the machine position (and the travel limits) can be trusted.
     public var homed: Bool?
+    /// GRBL was built with single-axis homing (`$HX`, `$HY`, `$HZ`; "H" in `$I`'s `[OPT:]`).
+    public var homeAxes: Bool?
     public var feed = 0.0
     public var spindle = 0.0
     public var overrides = Overrides()
@@ -387,6 +389,8 @@ public enum Command: Equatable, Sendable {
     case connect(port: String?)
     case disconnect
     case home
+    /// Home one axis: `$HZ` (Z first for X and Y) where GRBL can, else a move back to the position the last full home left it at.
+    case homeAxis(axis: Axis)
     case unlock
     case reset
     case hold
@@ -426,6 +430,7 @@ public enum Command: Equatable, Sendable {
         case .connect: "connect"
         case .disconnect: "disconnect"
         case .home: "home"
+        case .homeAxis: "homeAxis"
         case .unlock: "unlock"
         case .reset: "reset"
         case .hold: "hold"
@@ -465,13 +470,13 @@ public enum Command: Equatable, Sendable {
 
     /// Commands that move the machine.
     public var movesMachine: Bool {
-        ["start", "startNext", "jog", "home", "goToZero", "mdi", "runMacro", "probeZ"].contains(type)
+        ["start", "startNext", "jog", "home", "homeAxis", "goToZero", "mdi", "runMacro", "probeZ"].contains(type)
     }
 }
 
 extension Command: Codable {
     private enum Key: String, CodingKey {
-        case type, port, x, y, z, feed, axes, line, id, fileId, group, fromLine, spindleOff, kind, action, name, folder, path, to, macro, config, target
+        case type, port, x, y, z, feed, axes, axis, line, id, fileId, group, fromLine, spindleOff, kind, action, name, folder, path, to, macro, config, target
     }
 
     public init(from decoder: Decoder) throws {
@@ -482,6 +487,7 @@ extension Command: Codable {
         case "connect": self = .connect(port: try c.decodeIfPresent(String.self, forKey: .port))
         case "disconnect": self = .disconnect
         case "home": self = .home
+        case "homeAxis": self = .homeAxis(axis: try c.decode(Axis.self, forKey: .axis))
         case "unlock": self = .unlock
         case "reset": self = .reset
         case "hold": self = .hold
@@ -534,6 +540,7 @@ extension Command: Codable {
             try c.encodeIfPresent(z, forKey: .z)
             try c.encode(feed, forKey: .feed)
         case .zero(let axes), .goToZero(let axes): try c.encode(axes, forKey: .axes)
+        case .homeAxis(let axis): try c.encode(axis, forKey: .axis)
         case .mdi(let line): try c.encode(line, forKey: .line)
         case .runMacro(let id), .deleteMacro(let id): try c.encode(id, forKey: .id)
         case .start(let fileId, let group, let fromLine, let spindleOff):

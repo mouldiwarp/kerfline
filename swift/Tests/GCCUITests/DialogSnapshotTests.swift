@@ -56,6 +56,18 @@ import Testing
         try #require(rep.representation(using: .png, properties: [:])).write(to: URL(filePath: dir).appending(path: "dialog-\(name).png"))
     }
 
+    /// The position panel's rows (Zero, →0, Home) fit the left column with the longest positions.
+    @Test func positionPanel() async throws {
+        let m = model()
+        var s = try #require(m.state)
+        s.machine.wpos = Vec3(-800, -800, -120)
+        s.machine.mpos = Vec3(-800, -800, -120)
+        m.state = s
+        let host = NSHostingView(rootView: DroPanel(s: s).fixedSize().environment(m))
+        #expect(host.fittingSize.width <= 330, "needs \(host.fittingSize.width) pt")
+        try render("position", DroPanel(s: s).frame(width: 330), m)
+    }
+
     @Test func dialogs() async throws {
         let m = model()
         try render("start", StartDialog(req: StartRequest(fileId: "a", next: false)), m)

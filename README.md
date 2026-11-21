@@ -138,9 +138,14 @@ at the top level. Re-sending a file with the same name replaces it, and the old 
 | Area | What's there |
 |---|---|
 | Top bar | Hub, agent and machine status, who sent the last command, Home, Unlock, and big Hold / Stop buttons. Banners below it for alarms, settings checks, updates and conflicts |
-| Left | Position readout (work and machine), zero per axis, zero XY / Z, go to zero, **Probe Z** with a touch plate, jog pad with step and feed presets (arrow keys and Page Up / Down also jog) |
+| Left | Position readout (work and machine), zero, go to zero and home per axis, zero XY / Z, go to zero, the big green **Probe Z** button for the touch plate, jog pad with step and feed presets (arrow keys and Page Up / Down also jog) |
 | Centre | 3D toolpath: remaining cuts in steel, finished cuts in gold, live tool position, work zero and machine envelope. Progress bar with %, line count, elapsed time and time left |
 | Right | Job controls (including running a file group in order, with a bit-change stop between files) and feed / spindle / rapid overrides, the file library, console with manual G-code entry, and macros |
+
+**Home** on an axis row homes just that axis. On a GRBL built with single-axis homing (`H` in `$I`'s `[OPT:]`)
+it sends `$HZ`, `$HX` or `$HY`, and for X and Y it homes Z first so the bit goes up clear of the work. Work zero is
+kept. Stock GRBL 1.1 can't home one axis (and `$HX` there can leave it stuck in Home), so then KerfLine never sends
+it: once the machine has been homed, **Home** moves that axis back to where the full home left it, Z first.
 
 ## Probing Z and running file groups
 

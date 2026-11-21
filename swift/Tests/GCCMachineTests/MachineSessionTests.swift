@@ -207,6 +207,43 @@ func program() -> String {
         await r.done()
     }
 
+    /// Home X on a GRBL with single-axis homing: Z homes first to lift the bit, then X; Y stays where it was.
+    @Test func homesOneAxisWithZFirst() async throws {
+        let r = try await Rig.make(config: .defaults)
+        try await until { await r.machine.homeAxes == true }
+        try await r.command(.jog(x: -100, y: -100, z: -30, feed: 5000))
+        try await until { let m = await r.machine; return m.status == .idle && m.mpos[2] < -29.9 }
+        #expect(await r.machine.homed != true)
+        r.sim.clearReceived()
+        try await r.command(.homeAxis(axis: .X))
+        #expect(r.sim.received.filter { $0.hasPrefix("$H") } == ["$HZ", "$HX"])
+        try await until { let m = await r.machine; return m.status == .idle && abs(m.mpos[0]) < 0.01 }
+        let m = await r.machine
+        #expect(abs(m.mpos[2]) < 0.01 && abs(m.mpos[1] + 100) < 0.01)
+        // Two of three axes homed isn't homed; Y makes it.
+        #expect(m.homed != true)
+        try await r.command(.homeAxis(axis: .Y))
+        #expect(await r.machine.homed == true)
+        await r.done()
+    }
+
+    /// Stock GRBL can't home one axis: never send it `$HX`; once homed, move back to the home position instead.
+    @Test func withoutSingleAxisHomingMovesBackToHome() async throws {
+        let r = try await Rig.make(Rig.sim { $0.singleAxisHoming = false }, config: .defaults)
+        try await until { await r.machine.homeAxes == false }
+        await expectThrows("can't home one axis") { try await r.command(.homeAxis(axis: .X)) }
+        try await r.command(.home)
+        try await until { let m = await r.machine; return m.status == .idle && m.homed == true }
+        try await wait(100) // the status report after homing records where it left the machine
+        try await r.command(.jog(x: -100, y: -100, z: -30, feed: 5000))
+        try await until { let m = await r.machine; return m.status == .idle && m.mpos[2] < -29.9 }
+        r.sim.clearReceived()
+        try await r.command(.homeAxis(axis: .X))
+        #expect(!r.sim.received.contains { $0.hasPrefix("$H") })
+        #expect(r.sim.received.filter { $0.hasPrefix("G53") } == ["G53G0Z0", "G53G0X0"])
+        await r.done()
+    }
+
     @Test func refusesAJobThatWouldGoPastTheTopOfZ() async throws {
         let r = try await Rig.make(config: .defaults)
         try await r.command(.home)

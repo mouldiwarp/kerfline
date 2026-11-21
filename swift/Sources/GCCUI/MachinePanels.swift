@@ -12,6 +12,9 @@ struct DroPanel: View {
 
     var body: some View {
         let idle = s.machineReady && s.machine.status == .idle && !s.jobActive
+        // Single-axis homing works from ALARM too; the fallback move needs a full home first.
+        let canHomeAxis = s.machineReady && !s.jobActive && s.machine.status != .home
+            && (s.machine.homeAxes == true ? [.idle, .alarm].contains(s.machine.status) : idle && s.machine.homed == true)
         Panel("Position") {
             Text(s.machine.homed == true ? "homed" : "not homed").font(.system(size: 11)).foregroundStyle(s.machine.homed == true ? Color.ok : Color.steel)
         } content: {
@@ -28,6 +31,8 @@ struct DroPanel: View {
                             .help("Set work \(a.rawValue) zero here")
                         Button("→0") { model.send(.goToZero(axes: [a])) }.gccButton(.normal, .small).disabled(!idle)
                             .help(a == .Z ? "Move Z to work zero" : "Move \(a.rawValue) to work zero (lifting Z to safe height first)")
+                        Button("Home") { model.send(.homeAxis(axis: a)) }.gccButton(.outlineGold, .small)
+                            .disabled(!canHomeAxis).help(homeHelp(a))
                     }
                     .padding(.vertical, 4).padding(.horizontal, 8)
                     .background(RoundedRectangle(cornerRadius: 6).fill(Color.obsidian))
@@ -43,8 +48,11 @@ struct DroPanel: View {
                     Button("Go to XYZ0") { model.send(.goToZero(axes: [.X, .Y, .Z])) }.gccButton(.outlineGold, .small).wide()
                 }
                 .disabled(!idle)
-                Button("↧ Probe Z…") { model.openProbe() }.gccButton(.outlineGold, .small).wide()
-                    .disabled(!s.machineReady || s.jobActive).help("Set Z zero with the touch plate")
+                Button { model.openProbe() } label: {
+                    Text("↧  Probe Z…").font(.system(size: 16, weight: .bold)).frame(maxWidth: .infinity)
+                }
+                .gccButton(.go, .large).wide().padding(.top, 4)
+                .disabled(!s.machineReady || s.jobActive).help("Set Z zero with the touch plate")
                 HStack {
                     Text("Feed \(Int(s.machine.feed))").monospaced()
                     Spacer()
@@ -53,6 +61,14 @@ struct DroPanel: View {
                 .font(.system(size: 11)).foregroundStyle(Color.steel)
             }
         }
+    }
+}
+
+extension DroPanel {
+    func homeHelp(_ a: Axis) -> String {
+        let lift = a == .Z ? "" : " Z homes first, to lift the bit clear."
+        if s.machine.homeAxes == true { return "Home \(a.rawValue) on its limit switch ($H\(a.rawValue)).\(lift)" }
+        return "Move \(a.rawValue) back to where the last full home left it (this GRBL can't home one axis).\(a == .Z ? "" : " Z goes up first.") Home all once first."
     }
 }
 

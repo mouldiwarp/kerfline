@@ -38,6 +38,8 @@ public struct FakeGrblOptions: Sendable {
     /// Machine Z of the touch plate's top surface under the bit (the probe input closes when the
     /// bit reaches it). nil means no plate: probes find nothing.
     public var probeSurfaceZ: Double? = -60
+    /// Built with single-axis homing (`$HX`…, "H" in `[OPT:]`). Stock GRBL 1.1 isn't: `$HX` is error:3.
+    public var singleAxisHoming = true
 
     public init(
         speed: Double = 1, homingRequired: Bool = true, softLimits: Bool = false, workOffset: Vec3 = Vec3(-400, -400, -60),
@@ -107,6 +109,8 @@ public final class FakeGrbl: Transport, @unchecked Sendable {
     private var lastWco = ""
     private var lastOv = ""
     private var homingRemaining = 0.0
+    /// The axes the homing cycle in progress homes.
+    private var homingAxes: [Int] = [0, 1, 2]
     private var probing = false
     private var pendingOkAfterHome = false
     private var dropOks = 0
@@ -368,9 +372,9 @@ public final class FakeGrbl: Transport, @unchecked Sendable {
         if _state == .home {
             homingRemaining -= dt
             // Travel toward the homing corner while homing.
-            _mpos += (Vec3.zero - _mpos) * min(1, dt * 2)
+            for i in homingAxes { _mpos[i] += (0 - _mpos[i]) * min(1, dt * 2) }
             if homingRemaining <= 0 {
-                _mpos = .zero
+                for i in homingAxes { _mpos[i] = 0 }
                 _state = .idle
                 if pendingOkAfterHome { send("ok") }
                 pendingOkAfterHome = false
@@ -474,7 +478,7 @@ public final class FakeGrbl: Transport, @unchecked Sendable {
             return send("ok")
         case "$I":
             send("[VER:\(version):]")
-            send("[OPT:V,\(opts.plannerSize),\(opts.rxSize)]")
+            send("[OPT:V\(opts.singleAxisHoming ? "H" : ""),\(opts.plannerSize),\(opts.rxSize)]")
             return send("ok")
         case "$X":
             if _state == .alarm {
@@ -485,7 +489,16 @@ public final class FakeGrbl: Transport, @unchecked Sendable {
         case "$H":
             if _state != .idle && _state != .alarm { return send("error:8") }
             _state = .home
+            homingAxes = [0, 1, 2]
             homingRemaining = 2 // simulated seconds
+            pendingOkAfterHome = true
+            return
+        case "$HX", "$HY", "$HZ":
+            guard opts.singleAxisHoming else { return send("error:3") }
+            if _state != .idle && _state != .alarm { return send("error:8") }
+            _state = .home
+            homingAxes = [["$HX": 0, "$HY": 1, "$HZ": 2][line]!]
+            homingRemaining = 1
             pendingOkAfterHome = true
             return
         case "$C", "$SLP", "$N", "$RST=*", "$RST=$", "$RST=#":
