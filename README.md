@@ -222,8 +222,13 @@ the files after the first then run without asking again.
 
 ## Dealing with a problem mid-cut
 
-- **Pause** stops the motion and leaves the spindle running. The Job panel then offers **Stop spindle**. **Resume** spins it back up, waits for it, and carries on.
-- GRBL can't jog while paused. To move the cutter away (clear chips, free a part, change a broken bit), press **Stop**. The job remembers the line the cutter was on, which is earlier than the line count because GRBL queues moves ahead.
+- **Pause** (in the Job panel) gets the cutter out of the way: it stops at the line the cutter is on, turns the spindle
+  off and raises Z to 1 mm under the top of travel (only to safe Z above work zero if the machine isn't homed). GRBL
+  can't move at all during a plain feed hold, and the FoxAlien's firmware (`[OPT:VZ,…]`) has no parking, so Pause stops
+  rather than holds. **Resume…** then opens the resume dialog at that line (below); **Stop** ends the job there.
+- **Hold** in the top bar is GRBL's plain feed hold: the motion stops with the spindle still running and Z where it is.
+  The Job panel then offers **Stop spindle**, and **Resume** spins it back up, waits for it, and carries on.
+- To move the cutter away after a Hold (clear chips, free a part, change a broken bit), press **Stop**. The job remembers the line the cutter was on, which is earlier than the line count because GRBL queues moves ahead.
 - When you are ready, use **Resume from line…** in the Job panel. It shows the program around that line, and you can go back a line or two if unsure. It then:
   1. restores the program's modes (units, distance mode, plane, work offset);
   2. lifts straight up to the top of Z travel (if the machine isn't homed, to the program's own highest Z; it never

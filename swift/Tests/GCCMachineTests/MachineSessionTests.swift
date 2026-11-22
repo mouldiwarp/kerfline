@@ -109,6 +109,29 @@ func program() -> String {
         await r.done()
     }
 
+    @Test func pauseStopsAtTheCurrentLineAndRaisesZToTheTop() async throws {
+        let r = try await Rig.make(Rig.sim(speed: 5), config: .defaults)
+        try await r.command(.home)
+        try await until { await r.idle() }
+        try await r.command(.jog(x: -100, y: -100, z: -40, feed: 6000))
+        try await until { let m = await r.machine; return m.mpos[2] == -40 && m.status == .idle }
+        try await r.command(.zero(axes: [.X, .Y, .Z]))
+        try await until { await r.machine.wco[2] == -40 }
+        try await r.start(program())
+        try await until(15000) { let n = await r.job.ackedLines; let st = await r.machine.status; return n > 20 && st == .run }
+        try await r.command(.pauseLift, by: "garage")
+        let job = await r.job
+        #expect(job.status == .stopped)
+        #expect(job.lifted == true)
+        #expect(try #require(job.resumeLine) > 5)
+        try await until { let m = await r.machine; return m.status == .idle && close(m.mpos[2], -1, 3) }
+        #expect(await r.machine.alarm == nil)
+        #expect(r.sim.received.last == "G53G0Z-1")
+        // A fresh start (the resume) clears the flag.
+        await expectThrows("No job is running") { try await r.command(.pauseLift) }
+        await r.done()
+    }
+
     @Test func remembersWhereAStoppedJobGotToAndResumesFromThere() async throws {
         let r = try await Rig.make(Rig.sim(speed: 5), config: .defaults)
         let text = program()

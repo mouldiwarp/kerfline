@@ -135,6 +135,8 @@ public struct JobState: Codable, Equatable, Sendable {
     public var firstLine: Int?
     /// After a stop or failure: the stream line the cutter was on, to resume from.
     public var resumeLine: Int?
+    /// Stopped by Pause (`pauseLift`): Z was raised, and Resume carries on from `resumeLine`.
+    public var lifted: Bool?
     /// Stream line the machine is executing now (behind ackedLines by what GRBL has queued).
     public var cuttingLine: Int?
     /// Estimated seconds of the whole program, and how many of them the machine has done.
@@ -395,6 +397,9 @@ public enum Command: Equatable, Sendable {
     case reset
     case hold
     case resume
+    /// Pause a job and raise Z out of the way. GRBL can't move during a feed hold (without parking, which the
+    /// FoxAlien's firmware lacks), so this stops at the current line, lifts Z to the top, and Resume restarts from there.
+    case pauseLift
     case jog(x: Double?, y: Double?, z: Double?, feed: Double)
     case jogCancel
     case zero(axes: [Axis])
@@ -435,6 +440,7 @@ public enum Command: Equatable, Sendable {
         case .reset: "reset"
         case .hold: "hold"
         case .resume: "resume"
+        case .pauseLift: "pauseLift"
         case .jog: "jog"
         case .jogCancel: "jogCancel"
         case .zero: "zero"
@@ -492,6 +498,7 @@ extension Command: Codable {
         case "reset": self = .reset
         case "hold": self = .hold
         case "resume": self = .resume
+        case "pauseLift": self = .pauseLift
         case "jog":
             self = .jog(
                 x: try c.decodeIfPresent(Double.self, forKey: .x), y: try c.decodeIfPresent(Double.self, forKey: .y),
@@ -565,7 +572,7 @@ extension Command: Codable {
         case .saveMacro(let macro): try c.encode(macro, forKey: .macro)
         case .saveConfig(let config): try c.encode(config, forKey: .config)
         case .update(let target): try c.encode(target, forKey: .target)
-        case .disconnect, .home, .unlock, .reset, .hold, .resume, .jogCancel, .spindleStop, .startNext, .probeZ, .stop,
+        case .disconnect, .home, .unlock, .reset, .hold, .resume, .jogCancel, .spindleStop, .startNext, .probeZ, .stop, .pauseLift,
             .refreshSettings, .clearJob:
             break
         }

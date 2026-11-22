@@ -55,6 +55,8 @@ nonisolated(unsafe) private let settingLine = try! Regex(#"^\$(\d+)=(.*)$"#)
 public actor MachineSession {
     public private(set) var machine: MachineState
     public private(set) var job = JobState()
+    /// A `pauseLift` is stopping the job (so finishing it says "paused", not "stopped").
+    private var pausing = false
     public private(set) var console: [ConsoleLine] = []
     public var config: MachineConfig?
     public var macros: [Macro] = []
@@ -688,6 +690,12 @@ public actor MachineSession {
         jobLines = []
         emit(.job(job))
         let name = job.fileName ?? ""
+        if status == .stopped, pausing {
+            let at = job.resumeLine.map { " at line \($0 + 1)" } ?? ""
+            log(.info, "Job paused\(at): \(name). Raising Z")
+            emit(.toast(Toast(.info, "Paused\(at). Raising Z")))
+            return
+        }
         log(.info, status == .done ? "Job complete: \(name)" : "Job stopped: \(name)")
         emit(.toast(Toast(.info, status == .done ? "Job complete: \(name)" : "Job stopped")))
     }
@@ -817,6 +825,31 @@ public actor MachineSession {
             }
         case .stop:
             try await stopJob(by: by)
+        case .pauseLift:
+            try need()
+            guard job.status == .running || job.status == .paused else { throw MachineError("No job is running to pause") }
+            pausing = true
+            defer { pausing = false }
+            try await stopJob(by: by)
+            // Wait for the reset to finish the job and GRBL to settle, then lift.
+            let until = nowMs() + 6000
+            while nowMs() < until, !(job.status == .stopped && machine.status == .idle) {
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            guard job.status == .stopped else { throw MachineError("The job didn't stop cleanly, so Z wasn't raised") }
+            job.lifted = true
+            emit(.job(job))
+            guard machine.status == .idle else {
+                throw MachineError("Paused, but GRBL is \(machine.status.rawValue), so Z wasn't raised. Unlock or home, then jog Z up")
+            }
+            // Homed: just under the top of travel. Not homed, the top isn't known: only to safe Z above work zero.
+            let target = machine.homed == true
+                ? (config?.envelope.max[2] ?? 0) - 1
+                : machine.wco[2] + (config?.safeZ ?? 5)
+            if target > machine.mpos[2] + 0.001 {
+                let r = await user("G53G0Z\(fmt(target))", by: by)
+                if !r.ok { throw MachineError("Paused, but raising Z failed: \(r.error ?? "error")") }
+            }
         case .spindleStop:
             try need()
             // GRBL only takes this once a feed hold has completed; it toggles, and Resume turns it back on.

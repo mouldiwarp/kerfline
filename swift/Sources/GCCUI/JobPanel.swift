@@ -60,6 +60,14 @@ struct JobPanel: View {
                     Button("End group") { model.send(.clearJob) }.gccButton(.normal, .large).wide()
                         .help("Stop here and skip the remaining files")
                 }
+            } else if !active, job.status == .stopped, job.lifted == true, job.resumeLine != nil,
+                      s.library.contains(where: { $0.id == job.fileId }) {
+                HStack(spacing: 8) {
+                    Button("Resume…") { model.dialog = .resume }.gccButton(.primary, .large).wide().disabled(!idle)
+                        .help("Spins up, moves back over the cut, lowers and carries on from the line it paused on")
+                    Button("Stop") { model.send(.clearJob) }.gccButton(.danger, .large).wide()
+                        .help("End the job here")
+                }
             } else if !active {
                 Button("Start") {
                     if let f = selected { model.confirmStart = StartRequest(fileId: f.id, next: false) }
@@ -73,7 +81,8 @@ struct JobPanel: View {
                     if job.status == .paused {
                         Button("Resume") { model.send(.resume) }.gccButton(.primary, .large).wide().disabled(!s.machineReady)
                     } else {
-                        Button("Pause") { model.send(.hold) }.gccButton(.warn, .large).wide().disabled(!s.machineReady || job.status != .running)
+                        Button("Pause") { model.send(.pauseLift) }.gccButton(.warn, .large).wide().disabled(!s.machineReady || job.status != .running)
+                            .help("Stop at the current line, spindle off, and raise Z to the top. Resume carries on from that line.")
                     }
                     Button("Stop") { model.send(.stop) }.gccButton(.danger, .large).wide().disabled(!s.machineReady || job.status == .stopping)
                 }
@@ -83,11 +92,17 @@ struct JobPanel: View {
 
             if !active, next == nil, [.stopped, .error].contains(job.status), let line = job.resumeLine, s.library.contains(where: { $0.id == job.fileId }) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Stopped at line \(line + 1) of \(job.totalLines) of \(job.fileName ?? "the file").").font(.system(size: 12.5))
-                    Text("Deal with the problem (jog, clear chips, change the bit), then carry on from where it stopped.")
-                        .font(.system(size: 12)).foregroundStyle(Color.steel)
-                    Button("Resume from line \(line + 1)…") { model.dialog = .resume }
-                    .gccButton(.outlineGold).disabled(!idle)
+                    if job.lifted == true {
+                        Text("Paused at line \(line + 1) of \(job.totalLines). The spindle is off and Z is raised.").font(.system(size: 12.5))
+                        Text("Clear chips or fix the problem (don't move work zero), then Resume: it spins up, moves back over and lowers to carry on.")
+                            .font(.system(size: 12)).foregroundStyle(Color.steel)
+                    } else {
+                        Text("Stopped at line \(line + 1) of \(job.totalLines) of \(job.fileName ?? "the file").").font(.system(size: 12.5))
+                        Text("Deal with the problem (jog, clear chips, change the bit), then carry on from where it stopped.")
+                            .font(.system(size: 12)).foregroundStyle(Color.steel)
+                        Button("Resume from line \(line + 1)…") { model.dialog = .resume }
+                        .gccButton(.outlineGold).disabled(!idle)
+                    }
                 }
                 .padding(10).background(RoundedRectangle(cornerRadius: 6).fill(Color.obsidian))
             }
