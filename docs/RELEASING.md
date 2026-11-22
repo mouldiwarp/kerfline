@@ -19,7 +19,9 @@ and on the machine first. GitHub's tests are a second check, not the gate.
    - [ ] Home (`$H`), then jog each axis both ways. A jog towards the end of travel stops short of it.
    - [ ] Probe Z on the touch plate. Then a probe that misses gives ALARM 5.
    - [ ] Air-cut `samples/test-square.nc`. Progress and time left move sensibly.
-   - [ ] During the run: Pause, Stop spindle, then Resume. The spindle spins back up before it carries on.
+   - [ ] During the run: Hold (top bar), Stop spindle, then Resume. The spindle spins back up before it carries on.
+   - [ ] During the run: Pause (Job panel). It stops at the current line, the spindle goes off and Z rises to the top.
+         **Resume…** carries on from that line with the safe lead-in.
    - [ ] Stop mid-move. The job remembers the line the cutter was on. If GRBL alarmed, home again.
    - [ ] Resume from a line after a stop. The preamble goes to safe Z first.
    - [ ] Start refuses a job that would go past the travel, for example with Z zero set too high.

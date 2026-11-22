@@ -52,7 +52,7 @@ ports, run `swift run gcc ports` in the `swift` folder. The likely GRBL port is 
 2. On the garage Mac, click **Unlock** (the simulator starts locked, like GRBL with homing on), jog to the middle
    of the bed, and click **Zero all**.
 3. Start the job from either Mac. Both show the same progress in 3D and the same %.
-4. Pause from one Mac and resume from the other.
+4. Pause from one Mac (Z rises to the top) and resume from the other (**Resume…**, then **Resume from line**).
 5. Quit the app on the design Mac while the job runs. The garage keeps cutting and shows "Hub offline". Open it
    again and the design Mac catches up.
 

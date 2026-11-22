@@ -94,7 +94,7 @@ behind. Neither updates while a job runs on it. While a Mac has the machine on U
 - ⬜ Probe X/Y corners with the touch plate (corner-finding), as WorkBee's XYZ probe block does.
 - ⬜ Remember the probe result per group, and warn on Start next if Z wasn't re-probed after the bit change.
 - ⬜ **Continuous jog:** hold a button or key to jog, release to stop (`$J=` plus jog cancel).
-- ✅ **Resume from line N** after a stop, with a safe preamble (modes, safe Z, XY, spindle on and spin-up, then down). Defaults to the line the cutter was on. Spindle stop/start while paused.
+- ✅ **Resume from line N** after a stop, with a safe preamble (modes, safe Z, XY, spindle on and spin-up, then down). Defaults to the line the cutter was on. Spindle stop/start while held. **Pause** stops at the current line and raises Z to the top (GRBL can't move in a feed hold, and the FoxAlien's firmware has no parking); Resume carries on from that line.
 - ⬜ **Check mode** (`$C`) dry run, which streams the file through GRBL's parser without moving, to catch
   errors before cutting.
 - ⬜ **Block a start** when the toolpath goes outside the machine travel. Today the UI only warns.
@@ -109,6 +109,8 @@ behind. Neither updates while a job runs on it. While a Mac has the machine on U
 - 💡 Stock box and simulated material removal, like Swarf's simulation.
 
 ### Comfort and safety
+- ✅ Home X, Y or Z on its own (`$HX`… where the firmware has it, else back to the last full home's position).
+- ✅ **Go to XYZ0** asks first, naming where the file expects Z zero (spoilboard or top of the material).
 - ⬜ macOS notification and sound when a job finishes, pauses on an error or alarms.
 - ⬜ Touch-friendly "garage mode": bigger buttons, full screen, wake lock so the display stays on.
 - ⬜ Job history: what ran, when, how long, who started it, and how it ended.

@@ -118,7 +118,7 @@ func program() -> String {
         try await r.command(.zero(axes: [.X, .Y, .Z]))
         try await until { await r.machine.wco[2] == -40 }
         try await r.start(program())
-        try await until(15000) { let n = await r.job.ackedLines; let st = await r.machine.status; return n > 20 && st == .run }
+        try await until(15000) { let n = await r.job.cuttingLine ?? 0; let st = await r.machine.status; return n > 10 && st == .run }
         try await r.command(.pauseLift, by: "garage")
         let job = await r.job
         #expect(job.status == .stopped)

@@ -231,7 +231,7 @@ struct ProgressPanel: View {
                     .frame(minWidth: 72, alignment: .leading)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
-                        Text(jobStatusLabel(job.status).uppercased()).font(.heading).tracking(1.4)
+                        Text((job.status == .stopped && job.lifted == true ? "Paused" : jobStatusLabel(job.status)).uppercased()).font(.heading).tracking(1.4)
                             .foregroundStyle(job.status == .error ? Color.danger : [.paused, .toolchange].contains(job.status) ? .warn : .gold)
                         Text(
                             (job.group.map { "\($0.name) \($0.index + 1)/\($0.files.count) · " } ?? "") + (job.fileName ?? "No job")

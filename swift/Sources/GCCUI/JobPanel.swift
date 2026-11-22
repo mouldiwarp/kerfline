@@ -24,7 +24,7 @@ struct JobPanel: View {
             }
         } content: {
             VStack(alignment: .leading, spacing: 2) {
-                Eyebrow(next.map { "Next · file \($0.index + 1) of \($0.total)" } ?? (active ? "Running" : "Selected"))
+                Eyebrow(next.map { "Next · file \($0.index + 1) of \($0.total)" } ?? (active ? "Running" : job.status == .stopped && job.lifted == true ? "Paused" : "Selected"))
                 Text(next?.name ?? (active ? job.fileName ?? "—" : selected?.name ?? "—"))
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.offwhite).lineLimit(2)
                 if let f = next.map({ n in s.library.first(where: { $0.id == n.id }) }) ?? (active ? s.library.first(where: { $0.id == job.fileId }) : selected) {
