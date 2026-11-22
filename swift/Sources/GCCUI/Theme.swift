@@ -47,7 +47,7 @@ struct Eyebrow: View {
 }
 
 enum ButtonKind {
-    case normal, primary, outlineGold, warn, danger, ghost, go
+    case normal, primary, outlineGold, warn, danger, ghost, go, amber, red
 }
 
 struct GCCButtonStyle: ButtonStyle {
@@ -80,6 +80,8 @@ struct GCCButtonStyle: ButtonStyle {
         case .warn: return (Color.warn.opacity(0.18), .warn, .warn)
         case .danger: return (.dangerDim, .danger, Color(hex: 0xf08a86))
         case .ghost: return (.clear, .clear, .steel)
+        case .amber: return (Color(hex: 0xb7791f), Color(hex: 0xe0a030), .white)
+        case .red: return (Color(hex: 0xa8322d), Color(hex: 0xd9534f), .white)
         case .go: return (Color(hex: 0x2f8f4e), Color(hex: 0x46b86a), .white)
         }
     }

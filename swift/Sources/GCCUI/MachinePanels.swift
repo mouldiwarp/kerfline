@@ -9,6 +9,7 @@ import SwiftUI
 struct DroPanel: View {
     @Environment(AppModel.self) private var model
     let s: AppState
+    @State private var confirmXYZ0 = false
 
     var body: some View {
         let idle = s.machineReady && s.machine.status == .idle && !s.jobActive
@@ -44,10 +45,19 @@ struct DroPanel: View {
                 }
                 .disabled(!idle)
                 HStack(spacing: 6) {
-                    Button("Go to XY0") { model.send(.goToZero(axes: [.X, .Y])) }.gccButton(.outlineGold, .small).wide()
-                    Button("Go to XYZ0") { model.send(.goToZero(axes: [.X, .Y, .Z])) }.gccButton(.outlineGold, .small).wide()
+                    Button { model.send(.goToZero(axes: [.X, .Y])) } label: { Text("Go to XY0").frame(maxWidth: .infinity) }
+                        .gccButton(.amber).wide().help("Move to work X0 Y0, lifting Z to safe height first")
+                    Button { confirmXYZ0 = true } label: { Text("Go to XYZ0…").frame(maxWidth: .infinity) }
+                        .gccButton(.red).wide().help("Move to work X0 Y0, then lower Z to work Z zero (asks first)")
                 }
                 .disabled(!idle)
+                .alert("Lower Z to work Z zero?", isPresented: $confirmXYZ0) {
+                    Button("Go to XYZ0", role: .destructive) { model.send(.goToZero(axes: [.X, .Y, .Z])) }
+                    Button("Go to XY0 only") { model.send(.goToZero(axes: [.X, .Y])) }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text(xyz0Warning)
+                }
                 Button { model.openProbe() } label: {
                     Text("↧  Probe Z…").font(.system(size: 16, weight: .bold)).frame(maxWidth: .infinity)
                 }
@@ -65,6 +75,23 @@ struct DroPanel: View {
 }
 
 extension DroPanel {
+    /// The file in the job panel: the job's, or the one selected in the library.
+    var currentFile: LibraryItem? {
+        if let id = s.job.fileId, s.jobActive || [.stopped, .done, .error].contains(s.job.status),
+           let f = s.library.first(where: { $0.id == id }) { return f }
+        return model.selected
+    }
+
+    var xyz0Warning: String {
+        let f = currentFile
+        let where_ = switch f?.zZero {
+        case .spoilboard: "\(f!.name) takes Z zero on the SPOILBOARD. If that's where you zeroed, Z0 over the stock is inside the material: the bit will drive into it."
+        case .materialTop: "\(f!.name) takes Z zero on the TOP of the material, so Z0 should be the stock's surface."
+        case nil: f.map { "\($0.name) doesn't say where Z zero is." } ?? "No file is selected to say where Z zero is."
+        }
+        return "The bit moves over X0 Y0, then down to work Z zero.\n\n\(where_)\n\nCheck where Z was zeroed before going down. Go to XY0 only keeps Z at a safe height."
+    }
+
     func homeHelp(_ a: Axis) -> String {
         let lift = a == .Z ? "" : " Z homes first, to lift the bit clear."
         if s.machine.homeAxes == true { return "Home \(a.rawValue) on its limit switch ($H\(a.rawValue)).\(lift)" }
