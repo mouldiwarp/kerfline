@@ -1,4 +1,4 @@
-(GCode Controller demo: body pocket, holes and cutout)
+(SwarfGRBL demo: body pocket, holes and cutout)
 (Units mm, work zero front-left of stock, Z0 top of stock)
 G21 G90 G17
 G0 Z10

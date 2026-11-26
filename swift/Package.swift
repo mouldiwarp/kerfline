@@ -1,17 +1,17 @@
 // swift-tools-version: 6.2
-// GCode Controller 2.0: the native macOS app. See the plan in README "2.0".
+// SwarfGRBL: the native macOS GRBL sender, part of the Swarf Suite.
 import PackageDescription
 
 let package = Package(
-    name: "GCodeController",
+    name: "SwarfGRBL",
     platforms: [.macOS("26.0")],
     products: [
-        .library(name: "GCCCore", targets: ["GCCCore"]),
-        .library(name: "GCCMachine", targets: ["GCCMachine"]),
-        .library(name: "GCCLibrary", targets: ["GCCLibrary"]),
-        .library(name: "GCCNet", targets: ["GCCNet"]),
-        .executable(name: "gcc", targets: ["gcc"]),
-        .executable(name: "GCodeController", targets: ["GCodeController"]),
+        .library(name: "SGCore", targets: ["SGCore"]),
+        .library(name: "SGMachine", targets: ["SGMachine"]),
+        .library(name: "SGLibrary", targets: ["SGLibrary"]),
+        .library(name: "SGNet", targets: ["SGNet"]),
+        .executable(name: "swarfgrbl-cli", targets: ["swarfgrbl-cli"]),
+        .executable(name: "SwarfGRBL", targets: ["SwarfGRBL"]),
     ],
     dependencies: [
         // HTTP and WebSocket server (SwiftNIO).
@@ -22,32 +22,32 @@ let package = Package(
     ],
     targets: [
         // Pure Swift, no I/O: G-code, GRBL protocol, shared state, resume, progress, travel, surfacing.
-        .target(name: "GCCCore"),
+        .target(name: "SGCore"),
         // The machine: USB serial, the GRBL simulator, and the streaming session (1.0's controller).
-        .target(name: "GCCMachine", dependencies: ["GCCCore"]),
+        .target(name: "SGMachine", dependencies: ["SGCore"]),
         // The file library: blobs, SQLite, the Finder folder working copy, history, Trash, 1.0 import.
-        .target(name: "GCCLibrary", dependencies: ["GCCCore"], linkerSettings: [.linkedLibrary("sqlite3")]),
+        .target(name: "SGLibrary", dependencies: ["SGCore"], linkerSettings: [.linkedLibrary("sqlite3")]),
         // The running app without its window: hub HTTP API, Bonjour, the Mac-to-Mac link, library
         // sync, machine ownership and the inbox.
-        .target(name: "GCCNet", dependencies: [
-            "GCCCore", "GCCMachine", "GCCLibrary",
+        .target(name: "SGNet", dependencies: [
+            "SGCore", "SGMachine", "SGLibrary",
             .product(name: "Hummingbird", package: "hummingbird"),
             .product(name: "HummingbirdWebSocket", package: "hummingbird-websocket"),
             .product(name: "HummingbirdWSClient", package: "hummingbird-websocket"),
         ]),
         // The window: SwiftUI views and the model behind them (a library so tests can reach it).
-        .target(name: "GCCUI", dependencies: [
-            "GCCCore", "GCCMachine", "GCCLibrary", "GCCNet",
+        .target(name: "SGUI", dependencies: [
+            "SGCore", "SGMachine", "SGLibrary", "SGNet",
             .product(name: "Sparkle", package: "Sparkle"),
         ]),
         // The app: run as Hub or Agent, chosen on first launch.
-        .executableTarget(name: "GCodeController", dependencies: ["GCCUI"]),
-        // Headless sender: `gcc ports`, `gcc stream [--simulate | --port P] file.nc`.
-        .executableTarget(name: "gcc", dependencies: ["GCCMachine"]),
-        .testTarget(name: "GCCCoreTests", dependencies: ["GCCCore"]),
-        .testTarget(name: "GCCMachineTests", dependencies: ["GCCMachine"]),
-        .testTarget(name: "GCCLibraryTests", dependencies: ["GCCLibrary"]),
-        .testTarget(name: "GCCNetTests", dependencies: ["GCCNet", "GCCCore", "GCCMachine", "GCCLibrary"]),
-        .testTarget(name: "GCCUITests", dependencies: ["GCCUI", "GCCNet", "GCCCore", "GCCMachine", "GCCLibrary"]),
+        .executableTarget(name: "SwarfGRBL", dependencies: ["SGUI"]),
+        // Headless sender: `swarfgrbl-cli ports`, `swarfgrbl-cli stream [--simulate | --port P] file.nc`.
+        .executableTarget(name: "swarfgrbl-cli", dependencies: ["SGMachine"], path: "Sources/swarfgrbl-cli"),
+        .testTarget(name: "SGCoreTests", dependencies: ["SGCore"]),
+        .testTarget(name: "SGMachineTests", dependencies: ["SGMachine"]),
+        .testTarget(name: "SGLibraryTests", dependencies: ["SGLibrary"]),
+        .testTarget(name: "SGNetTests", dependencies: ["SGNet", "SGCore", "SGMachine", "SGLibrary"]),
+        .testTarget(name: "SGUITests", dependencies: ["SGUI", "SGNet", "SGCore", "SGMachine", "SGLibrary"]),
     ]
 )

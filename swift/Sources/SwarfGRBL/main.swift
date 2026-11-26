@@ -1,0 +1,2 @@
+import SGUI
+SwarfGRBLApp.main()

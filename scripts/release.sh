@@ -1,6 +1,6 @@
 #!/bin/zsh
-# Makes a release of KerfLine in dist/: the app (universal), KerfLine.zip (what Sparkle downloads),
-# KerfLine.dmg (what people download from the website) and appcast.xml (what Sparkle checks).
+# Makes a release of SwarfGRBL in dist/: the app (universal), SwarfGRBL.zip (what Sparkle downloads),
+# SwarfGRBL.dmg (what people download from the website) and appcast.xml (what Sparkle checks).
 # .github/workflows/release.yml runs it when a tag vX.Y is pushed; it works on a Mac too.
 #
 #   scripts/release.sh 2.1
@@ -16,15 +16,15 @@ VERSION="${1:?usage: scripts/release.sh VERSION}"
 VERSION="${VERSION#v}"
 TAG="v$VERSION"
 DIST="$REPO/dist"
-APP="$DIST/KerfLine.app"
+APP="$DIST/SwarfGRBL.app"
 SPARKLE_BIN="$REPO/swift/.build/artifacts/sparkle/Sparkle/bin"
-DOWNLOAD="https://github.com/mouldiwarp/kerfline/releases/download/$TAG"
+DOWNLOAD="https://github.com/Swarf-Suite/SwarfGRBL/releases/download/$TAG"
 # The public half of the Sparkle key (not a secret): every update must be signed with its private half.
-export GCC_SPARKLE_PUBLIC_KEY="${GCC_SPARKLE_PUBLIC_KEY:-$(cat scripts/sparkle-public-key.txt)}"
+export SG_SPARKLE_PUBLIC_KEY="${SG_SPARKLE_PUBLIC_KEY:-$(cat scripts/sparkle-public-key.txt)}"
 
 rm -rf "$DIST"
 mkdir -p "$DIST"
-GCC_RELEASE=1 GCC_VERSION="$VERSION" scripts/build-app.sh "$DIST"
+SG_RELEASE=1 SG_VERSION="$VERSION" scripts/build-app.sh "$DIST"
 
 SIGNED=0
 # The signer is only listed at -dvv. Capture it first: grep -q under pipefail can fail on SIGPIPE.
@@ -46,41 +46,41 @@ else
 fi
 
 # What Sparkle downloads: the (stapled) app, zipped.
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$DIST/KerfLine.zip"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$DIST/SwarfGRBL.zip"
 
 # What people download: a disk image with the app and a link to Applications.
 STAGE="$(mktemp -d)"
-ditto "$APP" "$STAGE/KerfLine.app"
+ditto "$APP" "$STAGE/SwarfGRBL.app"
 ln -s /Applications "$STAGE/Applications"
-hdiutil create -quiet -volname "KerfLine $VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO "$DIST/KerfLine.dmg"
+hdiutil create -quiet -volname "SwarfGRBL $VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO "$DIST/SwarfGRBL.dmg"
 rm -rf "$STAGE"
 if [[ "$SIGNED" == 1 ]]; then
-  codesign --force --sign "$IDENTITY" --timestamp "$DIST/KerfLine.dmg"
+  codesign --force --sign "$IDENTITY" --timestamp "$DIST/SwarfGRBL.dmg"
   if [[ "$NOTARIZED" == 1 ]]; then
     echo "Notarizing the disk image…"
-    notarize "$DIST/KerfLine.dmg"
-    xcrun stapler staple "$DIST/KerfLine.dmg"
+    notarize "$DIST/SwarfGRBL.dmg"
+    xcrun stapler staple "$DIST/SwarfGRBL.dmg"
   fi
 fi
 
 APPCAST=0
 if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]]; then
-  SIG=$(print -rn -- "$SPARKLE_ED_PRIVATE_KEY" | "$SPARKLE_BIN/sign_update" --ed-key-file - "$DIST/KerfLine.zip")
+  SIG=$(print -rn -- "$SPARKLE_ED_PRIVATE_KEY" | "$SPARKLE_BIN/sign_update" --ed-key-file - "$DIST/SwarfGRBL.zip")
   BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP/Contents/Info.plist")
   cat > "$DIST/appcast.xml" <<XML
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>KerfLine</title>
+    <title>SwarfGRBL</title>
     <item>
-      <title>KerfLine $VERSION</title>
+      <title>SwarfGRBL $VERSION</title>
       <pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
-      <link>https://github.com/mouldiwarp/kerfline/releases/tag/$TAG</link>
+      <link>https://github.com/Swarf-Suite/SwarfGRBL/releases/tag/$TAG</link>
       <sparkle:version>$BUILD</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-      <sparkle:fullReleaseNotesLink>https://github.com/mouldiwarp/kerfline/releases/tag/$TAG</sparkle:fullReleaseNotesLink>
-      <enclosure url="${GCC_DOWNLOAD_URL:-$DOWNLOAD}/KerfLine.zip" type="application/octet-stream" $SIG />
+      <sparkle:fullReleaseNotesLink>https://github.com/Swarf-Suite/SwarfGRBL/releases/tag/$TAG</sparkle:fullReleaseNotesLink>
+      <enclosure url="${SG_DOWNLOAD_URL:-$DOWNLOAD}/SwarfGRBL.zip" type="application/octet-stream" $SIG />
     </item>
   </channel>
 </rss>

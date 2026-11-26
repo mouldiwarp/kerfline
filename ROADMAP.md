@@ -13,9 +13,9 @@ Status key: ✅ done · 🚧 in progress · ⬜ planned · 💡 idea
 | 5 | Web UI: DRO, jog, zero, 3D progress, library, console, overrides, macros | ✅ |
 | 6 | Sync hardening: restart mid-job, multi-browser tests, double-click launchers, setup guide | ✅ |
 | 6b | Mac app launched from Spotlight (hub / agent / simulator roles; quitting stops the server) | ✅ |
-| 7 | "Send to GRBL Controller" in Swarf and Fretboard Modeller | ✅ merged into main in both apps |
+| 7 | "Send to GRBL Controller" in SwarfPath and Fretboard Modeller | ✅ merged into main in both apps |
 | 7b | Z probe with a touch plate; run a file group in order with bit-change stops | ✅ (simulator-tested; check on the machine) |
-| 7c | Library manager: project folders in `~/Documents/GCode Controller`, kept in step with Finder | ✅ |
+| 7c | Library manager: project folders in `~/Documents/SwarfGRBL`, kept in step with Finder | ✅ |
 | 7d | Version checks: an out-of-date agent is held until it's updated, with Update now | ✅ |
 | 7e | Spoilboard surfacing: zero at the left edge on the centre line, ramp-in zigzag skim | ✅ (simulator-tested) |
 | 8 | Real machine bring-up (FoxAlien XE-Pro Ultra) | ✅ homing, probing, spindle and surfacing on the machine |
@@ -30,25 +30,25 @@ The code is in `swift/`. Try the machine layer from the command line:
 
 ```sh
 cd swift
-swift run gcc ports                                   # serial ports (* = looks like GRBL)
-swift run gcc stream --simulate ../samples/test-square.nc
-swift run gcc stream ../samples/test-square.nc        # USB, port auto-detected (or --port PATH)
+swift run swarfgrbl-cli ports                                   # serial ports (* = looks like GRBL)
+swift run swarfgrbl-cli stream --simulate ../samples/test-square.nc
+swift run swarfgrbl-cli stream ../samples/test-square.nc        # USB, port auto-detected (or --port PATH)
 ```
 
-`gcc stream` prints the console and progress, and Ctrl-C stops the job (feed hold, then reset).
+`swarfgrbl-cli stream` prints the console and progress, and Ctrl-C stops the job (feed hold, then reset).
 
 Install the app on each Mac with `scripts/build-app.sh` (about a minute; it installs
-"GCode Controller 2.0" in `~/Applications`, and adds no login item). After that it
-updates itself: it checks GitHub every few hours (or GCode Controller 2.0 ▸ Check for Updates…),
+"SwarfGRBL" in `~/Applications`, and adds no login item). After that it
+updates itself: it checks GitHub every few hours (or SwarfGRBL ▸ Check for Updates…),
 and **Update now** pulls, rebuilds and restarts it. Either Mac can ask the other to update when it's
 behind. Neither updates while a job runs on it. While a Mac has the machine on USB it's kept awake.
 
 | Phase | What | Status |
 |---|---|---|
 | 1 | Core: G-code, GRBL protocol, state and commands, resume, progress, travel, surfacing, settings check (ported and checked identical to 1.0) | ✅ |
-| 2 | Machine: serial port, simulator, streaming session (1.0's controller tests all ported), `gcc` command-line streamer. Real-machine air cut with `gcc stream` still to do | ✅ |
+| 2 | Machine: serial port, simulator, streaming session (1.0's controller tests all ported), `swarfgrbl-cli` command-line streamer. Real-machine air cut with `swarfgrbl-cli stream` still to do | ✅ |
 | 3 | Library on disk: content blobs, SQLite with a per-field change log, Finder folder kept in step both ways (moves keep their id), 5 versions / 30 days of history, a 30-day Trash, 1.0 import | ✅ |
-| 4 | Network and sync: hub API (Swarf/Fretboard unchanged), Bonjour, inbox, link between the Macs with either-Mac machine ownership and command relay, library sync and conflicts (log compaction deferred) | ✅ |
+| 4 | Network and sync: hub API (SwarfPath/Fretboard unchanged), Bonjour, inbox, link between the Macs with either-Mac machine ownership and command relay, library sync and conflicts (log compaction deferred) | ✅ |
 | 5 | App shell: role picker (with a trial mode that leaves 1.0 alone), main window with every panel except 3D, keyboard jog, menus, toasts, library manager (folders, version history, Trash), conflict badges and dialog. Agent-alone-when-hub-is-down not yet tried on two Macs | ✅ |
 | 6 | Metal 3D view and every dialog | ✅ |
 | 7 | Build, install and self-update: `scripts/build-app.sh`, update from git (either Mac can update the other), keep-awake while it owns the machine | ✅ |
@@ -56,11 +56,9 @@ behind. Neither updates while a job runs on it. While a Mac has the machine on U
 | 9 | Signed releases: Developer ID signing, the app's final name, release builds on GitHub, updates from Releases (see below) | ⬜ waiting for the Apple Developer membership |
 
 ### Phase 9: signed releases
-- ✅ **Name** agreed: **KerfLine**, "a GRBL sender built for the FoxAlien XE-Ultra 8080 and other GRBL 1.1 machines",
+- ✅ **Name** agreed: **KerfLine** (since renamed SwarfGRBL, see Phase 10), "a GRBL sender built for the FoxAlien XE-Ultra 8080 and other GRBL 1.1 machines",
   with a line saying it isn't affiliated with or endorsed by FoxAlien. No FoxAlien logo, colours or "official".
-- ✅ The window, top bar and messages already say KerfLine.
-- ✅ Repo and docs renamed (`mouldiwarp/kerfline`). Releases are **KerfLine** (`io.github.mouldiwarp.kerfline`) and
-  bring over the GCode Controller 2.0 settings on first launch; builds from git keep the old name until the Macs move.
+- ✅ Repo and docs renamed (`mouldiwarp/kerfline`). Releases were **KerfLine** (`io.github.mouldiwarp.kerfline`).
 - ✅ **Developer ID signing** in `scripts/build-app.sh` (hardened runtime, timestamp, Sparkle signed inside out),
   falling back to ad-hoc without the certificate.
 - ✅ **Release workflow** (`.github/workflows/release.yml`, `scripts/release.sh`): a `vX.Y` tag builds the universal
@@ -71,8 +69,26 @@ behind. Neither updates while a job runs on it. While a Mac has the machine on U
 - ✅ The build-from-git updater stays for builds from the checkout.
 - ⬜ **Apple Developer membership** (applied 2026-11-18), then set the secrets (docs/RELEASING.md) and tag the first
   release. Check it opens on a fresh Mac with no Gatekeeper warning, and that the relaunch after an update works.
-- ⬜ Move both Macs to the KerfLine release; the website links to the download.
-- ⬜ Later: rename the library folder and the `gcc.*`/Bonjour names to KerfLine (needs a migration on both Macs).
+- ✅ Released (v2.1–v2.3, signed and notarized); the website links to the download.
+
+### Phase 10: the Swarf Suite
+KerfLine was already taken, so the apps are now a family under the
+[Swarf-Suite](https://github.com/Swarf-Suite) GitHub organisation:
+
+| App | Does | Repo |
+|---|---|---|
+| **SwarfPath** (was Swarf) | 3D CAM: STL/model to toolpaths and G-code | [Swarf-Suite/SwarfPath](https://github.com/Swarf-Suite/SwarfPath) |
+| **SwarfEngrave** (planned) | V-carve design and G-code | [Swarf-Suite/SwarfEngrave](https://github.com/Swarf-Suite/SwarfEngrave) |
+| **SwarfGRBL** (this app, was KerfLine) | Sends the G-code to the machine | [Swarf-Suite/SwarfGRBL](https://github.com/Swarf-Suite/SwarfGRBL) |
+
+- ✅ Repo moved to `Swarf-Suite/SwarfGRBL` (GitHub redirects the old URLs, including the v2.3 update feed).
+- ✅ Everything renamed: app and bundle id (`io.github.swarf-suite.swarfgrbl`, builds from git too), modules (`SG*`),
+  the command-line tool (`swarfgrbl-cli`), library folder (`~/Documents/SwarfGRBL`), inbox, data folder, `swarfgrbl.*`
+  settings and the Bonjour names (`_swarfgrbl._tcp`). The first launch moves the old folders and settings across, and
+  a build from git replaces `GCode Controller 2.0.app` (old copy to the Trash).
+- ⬜ Both Macs on SwarfGRBL (they must update together: the link's Bonjour name changed).
+- ⬜ SwarfEngrave sends to the hub the same way SwarfPath does (`POST /api/jobs`, `X-Source: SwarfEngrave`); see its
+  [roadmap](https://github.com/Swarf-Suite/SwarfEngrave/blob/main/ROADMAP.md).
 
 ## Next up
 
@@ -106,7 +122,7 @@ behind. Neither updates while a job runs on it. While a Mac has the machine on U
 - ⬜ Depth-aware drawing. Later passes over the same XY at a lower Z draw over cut segments, which hides
   some of the gold. Draw finished segments on top, or add a "hide below current Z" slider.
 - ⬜ Check that very large files (3D finishing passes run to 1M+ lines) parse off the main thread without the UI stuttering.
-- 💡 Stock box and simulated material removal, like Swarf's simulation.
+- 💡 Stock box and simulated material removal, like SwarfPath's simulation.
 
 ### Comfort and safety
 - ✅ Home X, Y or Z on its own (`$HX`… where the firmware has it, else back to the last full home's position).

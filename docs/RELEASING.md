@@ -1,7 +1,7 @@
-# Releasing KerfLine
+# Releasing SwarfGRBL
 
-A release is a universal **KerfLine.app**, signed with a Developer ID and notarized, in two forms:
-**KerfLine.dmg** (what people download) and **KerfLine.zip** (what Sparkle downloads to update an
+A release is a universal **SwarfGRBL.app**, signed with a Developer ID and notarized, in two forms:
+**SwarfGRBL.dmg** (what people download) and **SwarfGRBL.zip** (what Sparkle downloads to update an
 installed copy), plus **appcast.xml** (what Sparkle checks). GitHub Actions builds all of them for free
 (the repository is public) on its macOS 26 runner.
 
@@ -70,12 +70,12 @@ as the run's artifact for a few days. `scripts/release.sh 2.1` does the same on 
 
 | What | URL |
 |---|---|
-| Download (always the latest release) | `https://github.com/mouldiwarp/kerfline/releases/latest/download/KerfLine.dmg` |
-| Release notes | `https://github.com/mouldiwarp/kerfline/releases/latest` |
-| Sparkle feed (baked into the app) | `https://github.com/mouldiwarp/kerfline/releases/latest/download/appcast.xml` |
+| Download (always the latest release) | `https://github.com/Swarf-Suite/SwarfGRBL/releases/latest/download/SwarfGRBL.dmg` |
+| Release notes | `https://github.com/Swarf-Suite/SwarfGRBL/releases/latest` |
+| Sparkle feed (baked into the app) | `https://github.com/Swarf-Suite/SwarfGRBL/releases/latest/download/appcast.xml` |
 
 The feed URL is in every installed copy's Info.plist, so it mustn't change (unless a release first
-ships a new `GCC_FEED_URL`).
+ships a new `SG_FEED_URL`).
 
 ## Secrets
 
@@ -95,7 +95,7 @@ can't.
 ### The Sparkle key (once)
 
 The key pair was made with Sparkle's `generate_keys` and the private half is in the login keychain
-of the design Mac (account `kerfline`). To set the secret from it:
+of the design Mac (account `kerfline`, its name from before the rename). To set the secret from it:
 
 ```sh
 swift/.build/artifacts/sparkle/Sparkle/bin/generate_keys --account kerfline -x /tmp/k
@@ -125,10 +125,10 @@ it. If it's lost, installed copies can't be updated, and everyone has to downloa
 
 ## Moving the two Macs to releases
 
-Builds from git (`scripts/build-app.sh`) are **GCode Controller 2.0** with their own bundle id;
-releases are **KerfLine** (`io.github.mouldiwarp.kerfline`). Both use the same library folder. To move
-a Mac over: quit GCode Controller 2.0, install KerfLine from the dmg, and open it. Its first launch copies
-the GCode Controller settings (role, names, machine setup), and macOS asks once more for Documents and
+Builds from git (`scripts/build-app.sh`) and releases are both **SwarfGRBL.app**
+(`io.github.swarf-suite.swarfgrbl`); a release updates from GitHub, a build from git from its checkout. To move
+a Mac over from KerfLine or GCode Controller 2.0: quit it, install SwarfGRBL from the dmg, and open it. Its first launch copies
+the old settings (role, names, machine setup) and moves the library folder, and macOS asks once more for Documents and
 local network access. After that, the Developer ID signature keeps those permissions across updates.
-Delete `GCode Controller 2.0.app` from `~/Applications` once KerfLine is working. Keep the checkout to
+Delete `GCode Controller 2.0.app` from `~/Applications` once SwarfGRBL is working. Keep the checkout to
 try changes before releasing them.

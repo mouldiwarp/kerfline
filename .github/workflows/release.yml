@@ -1,7 +1,7 @@
-# Builds a KerfLine release on GitHub's macOS runners (free for a public repo).
+# Builds a SwarfGRBL release on GitHub's macOS runners (free for a public repo).
 #
-# Push a tag (git tag v2.1 && git push origin v2.1) and this builds the universal app, KerfLine.dmg,
-# KerfLine.zip and appcast.xml (scripts/release.sh) and makes a GitHub Release from them. The
+# Push a tag (git tag v2.1 && git push origin v2.1) and this builds the universal app, SwarfGRBL.dmg,
+# SwarfGRBL.zip and appcast.xml (scripts/release.sh) and makes a GitHub Release from them. The
 # release is only published once the build is signed and notarized; until the Apple secrets are
 # set it's left as a draft, which neither the website link nor Sparkle (releases/latest) can see.
 # Run it by hand (Actions → Release → Run workflow) to just build and keep the files as an artifact.
@@ -77,10 +77,10 @@ jobs:
       - name: Keep the files
         uses: actions/upload-artifact@v4
         with:
-          name: KerfLine-${{ env.VERSION }}
+          name: SwarfGRBL-${{ env.VERSION }}
           path: |
-            dist/KerfLine.dmg
-            dist/KerfLine.zip
+            dist/SwarfGRBL.dmg
+            dist/SwarfGRBL.zip
             dist/appcast.xml
             dist/release.env
           if-no-files-found: ignore
@@ -91,9 +91,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           source dist/release.env
-          files=(dist/KerfLine.dmg dist/KerfLine.zip)
+          files=(dist/SwarfGRBL.dmg dist/SwarfGRBL.zip)
           [[ "$APPCAST" == 1 ]] && files+=(dist/appcast.xml)
-          flags=(--title "KerfLine $VERSION" --generate-notes --verify-tag)
+          flags=(--title "SwarfGRBL $VERSION" --generate-notes --verify-tag)
           if [[ "$NOTARIZED" == 1 && "$APPCAST" == 1 ]]; then
             flags+=(--latest)
           else

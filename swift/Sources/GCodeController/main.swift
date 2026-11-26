@@ -1,2 +1,0 @@
-import GCCUI
-GCodeControllerApp.main()

@@ -1,10 +1,10 @@
-# KerfLine
+# SwarfGRBL
 
 **A GRBL sender for the Mac, built for the FoxAlien XE-Ultra 8080 and other GRBL 1.1 machines.** Design on one
 Mac, run the machine from another, and watch the same job live on both. It talks the standard GRBL serial protocol
 over USB, so grblHAL and FluidNC machines should work too (untested).
 
-KerfLine is an independent open source project. It isn't affiliated with or endorsed by FoxAlien.
+SwarfGRBL is an independent open source project. It isn't affiliated with or endorsed by FoxAlien.
 
 > [!WARNING]
 > **This is experimental software that moves a machine with a spinning cutter. You use it at your
@@ -14,22 +14,22 @@ KerfLine is an independent open source project. It isn't affiliated with or endo
 
 ## How it fits together
 
-One native Mac app, **KerfLine**, runs on both Macs. On first launch you choose what each Mac does:
+One native Mac app, **SwarfGRBL**, runs on both Macs. On first launch you choose what each Mac does:
 
 ```
- Swarf / Fretboard ──HTTP POST──▶ ┌──────────── KerfLine (Hub, design Mac :8080) ────────────┐
- ~/GCode Inbox ──────────────────▶│ library · HTTP API · Bonjour _gcodehub · the app window   │
+ SwarfPath / Fretboard ──HTTP POST──▶ ┌──────────── SwarfGRBL (Hub, design Mac :8080) ────────────┐
+ ~/SwarfGRBL Inbox ──────────────────▶│ library · HTTP API · Bonjour _swarfgrbl · the app window   │
                                   └───────────────▲───────────────────────────────────────────┘
                                                   │ link (WebSocket; the agent finds the hub with Bonjour and reconnects)
-                                  ┌───────────────┴──────────────── KerfLine (Agent, garage Mac) ┐
+                                  ┌───────────────┴──────────────── SwarfGRBL (Agent, garage Mac) ┐
                                   │ full copy of the library · GRBL streamer · the app window     │
                                   └───────────────┬───────────────────────────────────────────────┘
                                                   │ USB 115200 baud
                                               CNC machine (GRBL 1.1)
 ```
 
-- **Hub** (design Mac): receives files from Swarf, Fretboard, the inbox folder and drag and drop, and keeps the
-  library in `~/Documents/GCode Controller`.
+- **Hub** (design Mac): receives files from SwarfPath, Fretboard, the inbox folder and drag and drop, and keeps the
+  library in `~/Documents/SwarfGRBL`.
 - **Agent** (Mac next to the machine): drives the machine over USB. **It streams each job from its own copy of the
   file**, so a Wi-Fi dropout can't starve the machine mid-cut, and it keeps working if the hub Mac is asleep or off.
 - **Either Mac can own the machine**: whichever has it plugged in over USB drives it. The other Mac shows the same
@@ -43,12 +43,12 @@ One native Mac app, **KerfLine**, runs on both Macs. On first launch you choose 
 
 ## Installing
 
-KerfLine needs **macOS 26** on an Apple-silicon or Intel Mac.
+SwarfGRBL needs **macOS 26** on an Apple-silicon or Intel Mac.
 
 ### Download
 
-Get **[KerfLine.dmg](https://github.com/mouldiwarp/kerfline/releases/latest/download/KerfLine.dmg)** from the
-[latest release](https://github.com/mouldiwarp/kerfline/releases/latest), open it, and drag KerfLine to Applications.
+Get **[SwarfGRBL.dmg](https://github.com/Swarf-Suite/SwarfGRBL/releases/latest/download/SwarfGRBL.dmg)** from the
+[latest release](https://github.com/Swarf-Suite/SwarfGRBL/releases/latest), open it, and drag SwarfGRBL to Applications.
 Releases are signed with a Developer ID and notarized by Apple, so macOS opens them without a warning. (The first
 signed release is waiting on the Apple Developer membership; until it's out, build from source.)
 
@@ -57,15 +57,20 @@ signed release is waiting on the Apple Developer membership; until it's out, bui
 This needs **Xcode 26** (or its Command Line Tools, for Swift 6.2):
 
 ```sh
-git clone https://github.com/mouldiwarp/kerfline.git
-cd kerfline
+git clone https://github.com/Swarf-Suite/SwarfGRBL.git
+cd SwarfGRBL
 scripts/build-app.sh
 ```
 
 That compiles the app for that Mac (about a minute; a few on an older Mac) and installs it in `~/Applications`. It
-shows as **KerfLine**; open it from Spotlight: ⌘Space, then type "KerfLine". Nothing starts at login. (A build from
-source is still the file `GCode Controller 2.0.app` with the old bundle id for now, so the KerfLine download is a
-separate app to macOS. Its first launch brings over the settings of a GCode Controller 2.0 on the same Mac.)
+is **SwarfGRBL.app**; open it from Spotlight: ⌘Space, then type "SwarfGRBL". Nothing starts at login. A build from source
+and the download are the same app to macOS (same bundle id and settings); only how it updates differs.
+
+**Coming from KerfLine or GCode Controller 2.0?** SwarfGRBL is the same app, renamed. Its first launch brings over the
+old app's settings (role, names, machine, jog step), and moves the library to `~/Documents/SwarfGRBL`, the inbox to
+`~/SwarfGRBL Inbox` and the data to `~/Library/Application Support/SwarfGRBL` (1.0's own data stays where it was).
+macOS asks once more for Documents, Local Network and USB access. Update both Macs together: the link between them
+uses a new Bonjour name, so an old and a new app won't find each other.
 
 ### Either way
 
@@ -86,7 +91,7 @@ See **[docs/SETUP.md](docs/SETUP.md)** for the two-Mac walkthrough, including te
 
 ## Updating
 
-The app checks for updates every few hours (or **KerfLine ▸ Check for Updates…**) and shows a banner when there's
+The app checks for updates every few hours (or **SwarfGRBL ▸ Check for Updates…**) and shows a banner when there's
 one. **Update now** downloads it, installs it and restarts. If one Mac runs an older version than the other, both
 show the banner, and either can tell the other to update. A Mac never updates while a job is running on it: an
 update that's ready waits for the job to finish.
@@ -104,8 +109,8 @@ update that's ready waits for the job to finish.
 
 ## The library
 
-Your G-code lives in ordinary folders under **`~/Documents/GCode Controller`** on both Macs, one folder per
-project. Swarf groups (one file per tool, side A / side B) arrive in a folder named after the group; single files land
+Your G-code lives in ordinary folders under **`~/Documents/SwarfGRBL`** on both Macs, one folder per
+project. SwarfPath groups (one file per tool, side A / side B) arrive in a folder named after the group; single files land
 at the top level. Re-sending a file with the same name replaces it, and the old version is kept in its history.
 
 - **Library panel**: a folder tree beside the job controls. Drop files on a folder to add them there.
@@ -119,17 +124,17 @@ at the top level. Re-sending a file with the same name replaces it, and the old 
 ## Sending G-code
 
 - **Drag and drop** files onto the Library panel (or onto a folder in it), or click **Add…**.
-- **Drop files in `~/GCode Inbox`** on the design Mac. The hub imports them and moves them into `~/GCode Inbox/imported`.
+- **Drop files in `~/SwarfGRBL Inbox`** on the design Mac. The hub imports them and moves them into `~/SwarfGRBL Inbox/imported`.
 - **From an app or script**, POST the file to the hub:
 
   ```sh
   curl -X POST --data-binary @part.nc \
-       -H 'X-Filename: part.nc' -H 'X-Source: Swarf' \
+       -H 'X-Filename: part.nc' -H 'X-Source: SwarfPath' \
        http://design-mac.local:8080/api/jobs
   ```
 
   Optional headers: `X-Group` (a name that groups related files, such as side A and side B) and `X-Group-Index`
-  (their order). The hub advertises itself over Bonjour as `_gcodehub._tcp`.
+  (their order). The hub advertises itself over Bonjour as `_swarfgrbl._tcp`.
 - **Scripts on the hub Mac** can also send any command to the app (connect, start, hold, resume, stop…) with
   `POST http://localhost:8080/api/command` and a JSON body. Requests from other computers are refused.
 
@@ -144,7 +149,7 @@ at the top level. Re-sending a file with the same name replaces it, and the old 
 
 **Home** on an axis row homes just that axis. On a GRBL built with single-axis homing (`H` in `$I`'s `[OPT:]`)
 it sends `$HZ`, `$HX` or `$HY`, and for X and Y it homes Z first so the bit goes up clear of the work. Work zero is
-kept. Stock GRBL 1.1 can't home one axis (and `$HX` there can leave it stuck in Home), so then KerfLine never sends
+kept. Stock GRBL 1.1 can't home one axis (and `$HX` there can leave it stuck in Home), so then SwarfGRBL never sends
 it: once the machine has been homed, **Home** moves that axis back to where the full home left it, Z first.
 
 ## Probing Z and running file groups
@@ -159,14 +164,14 @@ it: once the machine has been homed, **Home** moves that axis back to where the 
    and the bit lifts clear. If nothing is touched, GRBL stops with ALARM 5 and nothing is changed.
 
 **Where Z zero goes.** A file made to be zeroed on the spoilboard cuts a stock thickness too deep if you zero on the
-material, and one made for the material top cuts in the air if you zero on the spoilboard. KerfLine reads the
+material, and one made for the material top cuts in the air if you zero on the spoilboard. SwarfGRBL reads the
 file's header and shows a badge under its name in the job panel and the 3D view: **Z zero: TOP of the material**
 (gold) or **Z zero: SPOILBOARD** (orange). The start dialog repeats it in its checklist, and the bit-change step says
-which surface to re-probe on. Fretboard Modeller and Swarf write it in words (`Z0 = TOP of stock`,
+which surface to re-probe on. Fretboard Modeller and SwarfPath write it in words (`Z0 = TOP of stock`,
 `Z0 = SPOILBOARD surface …`), and older Swarf files are read from their stock-space work zero. Other files can say it
 the same way in a comment near the top; one that doesn't shows **Z zero: not stated**, so check where it was made.
 
-**File groups.** Swarf sends one file per tool (and side A / side B) as a group. When you start a grouped file, the
+**File groups.** SwarfPath sends one file per tool (and side A / side B) as a group. When you start a grouped file, the
 start dialog offers to run the rest of the group in order. After each file the spindle is turned off and the job
 waits in **Bit change**: fit the next bit, re-probe Z, then press **Start next** (or **End group** to stop there). All
 the files are copied to the machine Mac before the first one starts, so a Wi-Fi dropout can't strand the group.
@@ -193,7 +198,7 @@ Each time the controller connects, the app reads its settings and compares them 
 | `$32` | 0 | Laser mode off |
 | `$130`–`$132` | 800, 800, 100 | Travel |
 
-Anything different is listed at the top of the window with a button to set it back. The banner also flags the app's travel if it doesn't match the controller's. When everything matches it says so and can be dismissed. The list lives in `swift/Sources/GCCCore/MachineCheck.swift`.
+Anything different is listed at the top of the window with a button to set it back. The banner also flags the app's travel if it doesn't match the controller's. When everything matches it says so and can be dismissed. The list lives in `swift/Sources/SGCore/MachineCheck.swift`.
 
 Some things the controller can't report. The banner and the Start dialog remind you to check them by hand. In particular, **the controller's Laser/Spindle switch must be on LASER**: the 1.5 kW spindle takes its PWM from the laser port.
 
@@ -262,20 +267,20 @@ The code is a Swift package in `swift/`:
 
 | Module | What |
 |---|---|
-| `GCCCore` | G-code and GRBL parsing, machine and job state, resume, progress, travel checks, surfacing, settings check |
-| `GCCMachine` | Serial port, GRBL simulator, the streaming session |
-| `GCCLibrary` | The library on disk: content store, SQLite, the Finder folder, history, Trash, sync changes |
-| `GCCNet` | The hub's HTTP API, Bonjour, the link between the Macs, sync, the inbox |
-| `GCCUI` | The SwiftUI app and its Metal 3D view |
-| `gcc` | Command-line tool |
+| `SGCore` | G-code and GRBL parsing, machine and job state, resume, progress, travel checks, surfacing, settings check |
+| `SGMachine` | Serial port, GRBL simulator, the streaming session |
+| `SGLibrary` | The library on disk: content store, SQLite, the Finder folder, history, Trash, sync changes |
+| `SGNet` | The hub's HTTP API, Bonjour, the link between the Macs, sync, the inbox |
+| `SGUI` | The SwiftUI app and its Metal 3D view |
+| `swarfgrbl-cli` | Command-line tool |
 
 ```sh
 scripts/ci.sh                         # the tests, in a clean checkout (as GitHub CI runs them)
 cd swift
 swift test
-swift run GCodeController             # run the app without installing it
-swift run gcc ports                   # serial ports (* = looks like GRBL)
-swift run gcc stream --simulate ../samples/test-square.nc
+swift run SwarfGRBL             # run the app without installing it
+swift run swarfgrbl-cli ports                   # serial ports (* = looks like GRBL)
+swift run swarfgrbl-cli stream --simulate ../samples/test-square.nc
 ```
 
 Releases are built by GitHub Actions when a `vX.Y` tag is pushed: see [docs/RELEASING.md](docs/RELEASING.md).
