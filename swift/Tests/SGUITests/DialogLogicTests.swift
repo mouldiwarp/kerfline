@@ -79,7 +79,11 @@ import Testing
     }
 
     @Test func surfacingParamsPersist() throws {
-        let d = try #require(UserDefaults(suiteName: "swarfgrbl.test.\(UUID())"))
+        // One fixed suite, cleared before and after, so test runs don't leave a settings file each.
+        let suite = "swarfgrbl.test.surfacing"
+        let d = try #require(UserDefaults(suiteName: suite))
+        d.removePersistentDomain(forName: suite)
+        defer { d.removePersistentDomain(forName: suite) }
         #expect(SurfacingStore.load(d) == .defaults)
         var p = SurfacingParams.defaults
         p.lengthX = 123

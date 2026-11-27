@@ -74,7 +74,7 @@ Key behaviours that span modules:
 ## Names
 
 SwarfGRBL is part of the **Swarf Suite** (GitHub org `Swarf-Suite`): **SwarfPath** (3D CAM, was Swarf, at
-`~/src/stl-cam`) and **SwarfEngrave** (planned, V-carve) make G-code; SwarfGRBL sends it. SwarfGRBL was KerfLine
+`~/src/SwarfPath`) and **SwarfEngrave** (planned, V-carve) make G-code; SwarfGRBL sends it. SwarfGRBL was KerfLine
 (v2.1–v2.3) and, before that, GCode Controller 2.0. Everything now uses the new names: bundle id
 `io.github.swarf-suite.swarfgrbl` (releases and builds from git alike), `SG*` modules, `swarfgrbl.*` defaults keys,
 `_swarfgrbl._tcp` Bonjour, `~/Documents/SwarfGRBL`. On first launch `AppSetup.migrateDefaults` copies the old
