@@ -96,6 +96,21 @@ public final class AppModel {
     private let keepAwake = KeepAwake()
     /// Keeping this Mac awake because it owns the machine.
     public var keepingAwake: Bool { keepAwake.isOn }
+    /// This Mac's setting: keep the screen on (and the Mac awake) while the machine is busy, whichever Mac has it.
+    public var keepScreenOn: Bool = UserDefaults.standard.bool(forKey: AppModel.keepScreenOnKey) {
+        didSet {
+            UserDefaults.standard.set(keepScreenOn, forKey: AppModel.keepScreenOnKey)
+            if let state { applyKeepAwake(state) }
+        }
+    }
+    static let keepScreenOnKey = "swarfgrbl.keepScreenOn"
+    /// Holding the screen on now.
+    public var keepingScreenOn: Bool { keepAwake.screenOn }
+
+    private func applyKeepAwake(_ s: AppState) {
+        keepAwake.set(s.link.machineOn == name && s.machine.connection != .disconnected)
+        keepAwake.setScreen(keepScreenOn && s.machineBusy)
+    }
 
     public init(build: BuildInfo = .current) {
         self.build = build
@@ -169,6 +184,7 @@ public final class AppModel {
         checkTask?.cancel()
         checkTask = nil
         keepAwake.set(false)
+        keepAwake.setScreen(false)
         if let instance {
             await instance.stop()
             await instance.library.close()
@@ -203,7 +219,7 @@ public final class AppModel {
             if !s.config.jogSteps.contains(jogStep) { jogStep = s.config.jogSteps.dropFirst().first ?? 1 }
         }
         noticeChanges(s)
-        keepAwake.set(s.link.machineOn == name && s.machine.connection != .disconnected)
+        applyKeepAwake(s)
         let first = state == nil
         state = s
         if first { devOpen(s) }

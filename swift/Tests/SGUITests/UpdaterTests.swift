@@ -159,6 +159,16 @@ struct UpdaterTests {
         #expect(k.set(false))
         #expect(!k.isOn)
     }
+
+    @Test @MainActor func keepAwakeHoldsTheScreenSeparately() {
+        let k = KeepAwake()
+        #expect(k.setScreen(true))
+        #expect(k.screenOn && !k.isOn)
+        #expect(!k.setScreen(true))
+        #expect(k.setScreen(false))
+        #expect(!k.screenOn)
+        #expect(!k.setScreen(false))
+    }
 }
 
 struct DefaultsMigrationTests {

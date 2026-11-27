@@ -21,6 +21,17 @@ import Testing
             bounds: nil, cutBounds: nil, estSeconds: 0, group: group, groupIndex: i)
     }
 
+    @Test func machineBusyIsAJobUnderWayOrTheMachineMoving() {
+        #expect(!state().machineBusy)
+        for st in [JobStatus.loading, .running, .paused, .stopping, .toolchange] { #expect(state { $0.job.status = st }.machineBusy) }
+        for st in [JobStatus.done, .stopped, .error] { #expect(!state { $0.job.status = st }.machineBusy) }
+        for g in [GrblState.run, .jog, .home, .hold] { #expect(state { $0.machine.status = g }.machineBusy) }
+        #expect(state { $0.machine.probing = true }.machineBusy)
+        #expect(!state { $0.machine.status = .alarm }.machineBusy)
+        // Not connected: nothing to keep awake for, whatever the last job said.
+        #expect(!state { $0.machine.connection = .disconnected; $0.job.status = .running }.machineBusy)
+    }
+
     @Test func homeCorners() {
         let t = Vec3(400, 400, 55)
         #expect(HomeCorner.frontLeft.envelope(travel: t) == Bounds(min: Vec3(0, 0, -55), max: Vec3(400, 400, 0)))

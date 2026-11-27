@@ -37,6 +37,11 @@ struct SettingsView: View {
                     Button("Disconnect") { model.send(.disconnect) }.gccButton(.ghost, .small).disabled(!s.machineReady || s.jobActive)
                 }
             }
+            section("This Mac") {
+                Toggle("Keep the screen on during jobs", isOn: Binding(get: { model.keepScreenOn }, set: { model.keepScreenOn = $0 }))
+                    .font(.system(size: 12))
+                Muted("While the machine is connected and busy (a job running, paused or waiting for a bit change, or jogging, homing or probing), this Mac's screen stays on and it doesn't sleep. Saved straight away, for this Mac only. Closing a laptop's lid still sleeps it.")
+            }
             section("Machine travel (mm)") {
                 HStack(spacing: 12) {
                     Field(label: "X") { NumberField(value: $travel.x) }

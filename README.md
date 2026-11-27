@@ -85,6 +85,10 @@ uses a new Bonjour name, so an old and a new app won't find each other.
 - **No USB driver is needed**: macOS includes one for the CH340 chip in the FoxAlien's controller, which shows up as
   `/dev/cu.usbserial-*`. Skip the CH341 driver on FoxAlien's USB stick, which is for Windows.
 - **While a Mac has the machine** it's kept from idle sleep (closing the lid still sleeps it).
+- **Keep the screen on during jobs** (Settings, under This Mac; off until you turn it on, and set on each Mac): while
+  the machine is connected and busy (a job running, paused or waiting for a bit change, or jogging, homing or
+  probing), that Mac's screen doesn't dim, sleep or start the screen saver, and the Mac doesn't sleep. It works on
+  either Mac, whichever has the machine, and lets go once the job ends. Like `caffeinate -d`, it changes no system setting.
 - **Quitting** warns first if a job is running on this Mac's machine.
 
 See **[docs/SETUP.md](docs/SETUP.md)** for the two-Mac walkthrough, including testing with the simulator.

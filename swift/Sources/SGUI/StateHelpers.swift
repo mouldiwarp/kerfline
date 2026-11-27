@@ -30,6 +30,10 @@ extension AppState {
     /// Moving, or probing (which counts as moving between its moves), so Hold and Stop stay available.
     public var moving: Bool { [.run, .jog, .home].contains(machine.status) || machine.probing == true }
 
+    /// The machine is connected and in the middle of something: a job under way (paused or waiting for a bit
+    /// change too), or GRBL moving, holding, homing or probing. "Keep the screen on during jobs" holds then.
+    public var machineBusy: Bool { machineReady && (job.status.isActive || moving || machine.status == .hold) }
+
     /// Jog and the jog keys work.
     public var canJog: Bool { machineReady && !jobActive && [.idle, .jog].contains(machine.status) }
 
